@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# Git alias that will run `npm ci` in the background automatically after checking out a branch
+
+# Usage: git ci <branch>
+
+git config --global alias.ci '!sh -c ": ; git checkout $1; (npm ci &>/dev/null &)"'
+

@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# Get event messages for newest Cloudwatch stream from provided Cloudwatch event log
+# Only works for lambdas prefixed with /aws/lambda/
+
+# Usage: get-log <function name> <aws region>
+# Example: get-log myLambda us-east-1
+
+LOG_STREAM=$(aws logs describe-log-streams --log-group-name /aws/lambda/$1 --order-by LastEventTime --descending --max-items 1 --region $2 \
+    | grep logStreamName \
+    | sed 's/.*"logStreamName": "//' \
+    | sed 's/",//')
+
+aws logs get-log-events --log-group-name /aws/lambda/$1 --log-stream-name $LOG_STREAM --region $2 \
+    | grep message \
+    | sed 's/.*"message": "//' \
+    | sed 's/"$//' \
+    | sed 's/\\t/ /g' \
+    | sed 's/\\n//g' \
+    | sed G \
+    | sed 's/\\"/"/g'
+
