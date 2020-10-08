@@ -1,0 +1,69 @@
+#!/bin/bash
+
+# Excecutes the specified build in CodeBuild
+
+# Usage: execute-build <build name> <source version> <aws region>
+# Example: execute-build MyBuild MyBranch us-east-1
+
+function get_build {
+    echo "$(aws codebuild batch-get-builds --ids $1)"
+}
+
+function get_build_status {
+    echo $1 \
+        | grep buildStatus \
+        | sed 's/.*"buildStatus": "//' \
+        | sed 's/",.*$//'
+}
+
+function get_build_complete {
+    echo $1 \
+        | grep buildComplete \
+        | sed 's/.*"buildComplete": //' \
+        | sed 's/,.*$//'
+}
+
+function get_build_phase {
+    echo $1 \
+        | grep phaseType \
+        | tail -1 \
+        | sed 's/.*"phaseType": "//' \
+        | sed 's/",.*$//'
+}
+
+function get_build_time {
+    START_TIME=$(echo $1 | grep startTime | sed 's/.*"startTime": //' | sed 's/\..*$//')
+    CUR_TIME=$(date +%s)
+    SECONDS_ELAPSED=$(($CUR_TIME - $START_TIME))
+    MINUTES=$(($SECONDS_ELAPSED / 60))
+    SECONDS=$(($SECONDS_ELAPSED - $MINUTES * 60))
+    echo "${MINUTES}m ${SECONDS}s"
+}
+
+
+BUILD_ID=$(aws codebuild start-build --project-name $1 --source-version $2 --region $3 \
+    | grep id \
+    | sed 's/".*id": "//' \
+    | sed 's/",.*$//')
+
+echo -e "Build Started: ${BUILD_ID}\n"
+
+BUILD=$(get_build "$BUILD_ID")
+LAST_PHASE=""
+LAST_UPDATE_TIME=0
+
+while [[ "$(get_build_complete "$BUILD")" != "true" ]]; do
+    BUILD=$(get_build "$BUILD_ID")
+    CURRENT_PHASE=$(get_build_phase "$BUILD")
+    if [[ "$CURRENT_PHASE" != "$LAST_PHASE" || "$(($(date +%s) - $LAST_UPDATE_TIME))" -gt 60 ]]; then
+        echo "Build Status: $(get_build_status "$BUILD")"
+        echo "Current Phase: $CURRENT_PHASE"
+        echo -e "Time Elapsed: $(get_build_time "$BUILD")\n"
+        LAST_PHASE=$CURRENT_PHASE
+        LAST_UPDATE_TIME=$(date +%s)
+    fi
+    sleep 10
+done
+
+echo "Build Complete!"
+
