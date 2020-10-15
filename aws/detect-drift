@@ -1,0 +1,65 @@
+#!/bin/bash
+
+# Looks for drift in Cloudformation stacks, including nested stacks, for provided stack name
+
+# Usage: detect-drift <stack-name> <aws region>
+# Example: detect-drift my-stack us-east-1
+
+REGION=$2
+
+function get_nested_stacks {
+    echo $(aws cloudformation list-stack-resources \
+        --stack-name $1 \
+        --output text \
+        --region $REGION \
+            | grep CloudFormation::Stack)
+}
+
+function get_drift_detection_status {
+    echo "$(aws cloudformation describe-stack-drift-detection-status \
+        --stack-drift-detection-id $1 \
+        --region $REGION \
+            | grep DetectionStatus \
+            | sed 's/.*"DetectionStatus": "//' \
+            | sed 's/",.*//')"
+}
+
+function get_drift_status {
+    echo "$(aws cloudformation describe-stack-drift-detection-status \
+        --stack-drift-detection-id $1 \
+        --region $REGION \
+            | grep StackDriftStatus \
+            | sed 's/.*"StackDriftStatus": "//' \
+            | sed 's/",.*//')"
+}
+
+function execute_drift_check {
+    DRIFT_ID=$(aws cloudformation detect-stack-drift --stack-name $1 --region $REGION \
+        | grep StackDriftDetectionId \
+        | sed 's/.*"StackDriftDetectionId": "//' \
+        | sed 's/"//g')
+        
+    while [[ "$(get_drift_detection_status "$DRIFT_ID")" != "DETECTION_COMPLETE" ]]; do
+        sleep 10
+    done
+
+    echo $DRIFT_ID
+}
+
+echo "Detecting drift for $1"
+DRIFT_ID=$(execute_drift_check $1)
+echo -e "Drift Status: $(get_drift_status "$DRIFT_ID")\n"
+
+RESOURCES=($(get_nested_stacks $1))
+
+for (( i=0; i<${#RESOURCES[@]}; i+=6 ));
+do
+    if [[ "${RESOURCES[$i+5]}" == "AWS::CloudFormation::Stack" ]]; then
+        STACK_NAME=$(echo ${RESOURCES[i+3]} | sed 's/^.*stack\///' | sed 's/\/.*$//')
+
+        echo "Detecting drift for $STACK_NAME"
+        DRIFT_ID=$(execute_drift_check $STACK_NAME)
+        echo -e "Drift Status: $(get_drift_status "$DRIFT_ID")\n"
+    fi
+done
+
