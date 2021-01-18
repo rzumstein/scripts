@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# Git alias that will create a new branch from an origin branch, then run `npm ci` in the background automatically
+
+# Usage: git cr <new branch> <origin branch>
+#   e.g. 'git cr my-new-branch develop' will create a new local branch named my-new-branch that is equal to origin/develop
+
+git config --global alias.cr '!sh -c \": ; git checkout -b $1; git fetch origin; git reset --hard origin/$2; (npm ci &>/dev/null &)\"'
+

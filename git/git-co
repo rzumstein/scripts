@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# Git alias that will checkout a branch, reset it to a freshly updated origin/<branch>, then `npm ci` in the background automatically
+# WARNING: This alias will reset --hard, which destroys any non-committed changes in the branch
+
+# Usage: git co <branch>
+
+git config --global alias.co '!sh -c \": ; git checkout $1; git fetch origin; git reset --hard origin/$1; (npm ci &>/dev/null &)\"'
+
