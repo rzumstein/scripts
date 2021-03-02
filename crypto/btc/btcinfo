@@ -1,0 +1,76 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: false
+
+require 'net/http'
+require 'sqlite3'
+require 'json'
+
+def print_btc_info(hash:, time_seconds:, avg_time_seconds:, price:)
+  formatted_block_time = Time.at(time_seconds).utc.strftime('%Hh:%Mm:%Ss')
+  formatted_avg_time = Time.at(avg_time_seconds).utc.strftime('%Hh:%Mm:%Ss')
+  formatted_price = format('$%.2f', price)
+  puts <<~OUTPUT
+    hash: #{hash}
+    time: #{formatted_block_time}
+    avg: #{formatted_avg_time}
+    price: #{formatted_price}
+
+  OUTPUT
+end
+
+db = SQLite3::Database.new 'btcinfo.db'
+db.results_as_hash = true
+
+db.execute <<-SQL
+  create table if not exists btcinfo (
+    transaction_time real,
+    price real
+  );
+SQL
+
+latest_hash_uri = URI('https://blockchain.info/q/latesthash')
+latest_hash = Net::HTTP.get(latest_hash_uri)
+current_hash = latest_hash
+time_start = Time.new
+first_block = true
+
+puts 'Initiating: waiting for first block...'
+
+loop do
+  latest_hash = Net::HTTP.get(latest_hash_uri)
+
+  if latest_hash != current_hash
+    current_hash = latest_hash
+    block_time = Time.new - time_start
+    time_start = Time.new
+
+    if first_block
+      puts 'Discovered first block. Initialization complete. Now recording stats starting with the next block'
+      first_block = false
+    else
+      sleep 10
+
+      tickers = JSON.parse(Net::HTTP.get(URI('https://api.blockchain.com/v3/exchange/tickers')))
+      btc_usd_ticker = tickers.select { |ticker| ticker['symbol'] == 'BTC-USD' }[0]
+      btc_price = btc_usd_ticker['last_trade_price']
+
+      db.execute "insert into btcinfo values (#{block_time}, #{btc_price})"
+
+      total_transaction_time = 0
+      transaction_count = 0
+      db.execute('select * from btcinfo') do |row|
+        total_transaction_time += row['transaction_time']
+        transaction_count += 1
+      end
+
+      print_btc_info(
+        hash: current_hash,
+        time_seconds: block_time,
+        avg_time_seconds: total_transaction_time / transaction_count,
+        price: btc_price
+      )
+    end
+  end
+
+  sleep 10
+end

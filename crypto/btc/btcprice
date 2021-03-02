@@ -1,0 +1,17 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: false
+
+require 'net/http'
+require 'json'
+
+tickers = JSON.parse(Net::HTTP.get(URI('https://api.blockchain.com/v3/exchange/tickers')))
+btc_usd_ticker = tickers.select { |ticker| ticker['symbol'] == 'BTC-USD' }[0]
+puts btc_usd_ticker['price_24h']
+
+puts 'BTC Price: $%.2f' % btc_usd_ticker['last_trade_price']
+
+if ARGV[0]
+  price = btc_usd_ticker['last_trade_price'] * ARGV[0].to_f
+  puts "Value of #{ARGV[0]} BTC: $%.2f" % price
+end
+
