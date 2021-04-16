@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Deletes a stack from Cloudformation, with updates during delete process
+
+# Usage: delete-stack <stack-name> <aws region>
+# Example: delete-stack my-stack us-east-1
+
+REGION=$2
+
+aws cloudformation delete-stack --stack-name=$1 --region=$REGION
+
+
