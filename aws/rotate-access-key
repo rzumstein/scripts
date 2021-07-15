@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# creates a new aws access key and removes any existing access keys, then outputs the new credentials
+
+# Usage: rotate-access-key <iam_username>
+# Example: rotate-access-key dave
+
+USERNAME=$1
+
+ACCESS_KEYS=$(
+  aws iam list-access-keys \
+    --user-name $USERNAME \
+    --output text \
+    --query 'AccessKeyMetadata[*].AccessKeyId'
+)
+
+ACCESS_KEY_ARRAY=($ACCESS_KEYS)
+
+for (( i=0; i<${#ACCESS_KEY_ARRAY[@]}; i++));
+do
+  echo "Deleting access key ${ACCESS_KEY_ARRAY[$i]}"
+  aws iam delete-access-key --user-name $USERNAME --access-key-id ${ACCESS_KEY_ARRAY[$i]}
+done
+
+echo ""
+
+echo "New access key credentials (remember to run aws configure):"
+aws iam create-access-key --user-name $USERNAME --output table --query 'AccessKey'
+
