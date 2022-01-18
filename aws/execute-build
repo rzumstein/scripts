@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Excecutes the specified build in CodeBuild
 
@@ -43,8 +43,10 @@ function get_build_time {
     OS=$(mac_or_linux)
     START_TIME=$(echo $1 | grep startTime | sed 's/.*"startTime": //' | sed 's/\..*$//' | tr -d '"')
     CUR_TIME=$(date +%s)
-    if [[ "$OS" = "mac" ]]; then
+    if [[ "$OS" == "mac" ]]; then
         START_TIME=$(date -j -f "%Y-%m-%dT%H:%M:%S" $START_TIME +%s)
+    else
+        START_TIME=$(date -d $START_TIME +"%s")
     fi
     SECONDS_ELAPSED=$(($CUR_TIME - $START_TIME))
     MINUTES=$(($SECONDS_ELAPSED / 60))
