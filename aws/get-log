@@ -6,12 +6,25 @@
 # Usage: get-log <function name> <aws region>
 # Example: get-log myLambda us-east-1
 
-LOG_STREAM=$(aws logs describe-log-streams --log-group-name /aws/lambda/$1 --order-by LastEventTime --descending --max-items 1 --region $2 \
-    | grep logStreamName \
-    | sed 's/.*"logStreamName": "//' \
-    | sed 's/",//')
+FUNCTION_NAME=$1
+REGION=$2
 
-aws logs get-log-events --log-group-name /aws/lambda/$1 --log-stream-name $LOG_STREAM --region $2 \
+if [[ $REGION = '' ]]; then
+  REGION='us-east-1'
+fi
+
+LOG_STREAM=$(
+  aws logs describe-log-streams \
+    --log-group-name /aws/lambda/$FUNCTION_NAME \
+    --order-by LastEventTime \
+    --descending \
+    --max-items 1 \
+    --region $REGION \
+    --query 'logStreams[0].logStreamName' \
+      | tr -d '"'
+)
+
+aws logs get-log-events --log-group-name /aws/lambda/$1 --log-stream-name $LOG_STREAM --region $REGION \
     | grep message \
     | sed 's/.*"message": "//' \
     | sed 's/"$//' \
@@ -20,3 +33,12 @@ aws logs get-log-events --log-group-name /aws/lambda/$1 --log-stream-name $LOG_S
     | sed G \
     | sed 's/\\"/"/g'
 
+#aws logs get-log-events --log-group-name /aws/lambda/$1 --log-stream-name $LOG_STREAM --region $REGION \
+#    | grep message \
+#    | sed 's/.*"message": "//' \
+#    | sed 's/"$//' \
+#    | sed 's/\\t/ /g' \
+#    | sed 's/\\n//g' \
+#    | sed G \
+#    | sed 's/\\"/"/g'
+#
