@@ -24,7 +24,18 @@ LOG_STREAM=$(
       | tr -d '"'
 )
 
-aws logs get-log-events --log-group-name /aws/lambda/$1 --log-stream-name $LOG_STREAM --region $REGION \
+# the more "aws proper" way of getting output but I don't think it looks as readable
+#aws logs get-log-events \
+#  --log-group-name /aws/lambda/$1 \
+#  --log-stream-name $LOG_STREAM \
+#  --region $REGION \
+#  --query 'events[*].message'
+
+
+aws logs get-log-events \
+  --log-group-name /aws/lambda/$1 \
+  --log-stream-name $LOG_STREAM \
+  --region $REGION \
     | grep message \
     | sed 's/.*"message": "//' \
     | sed 's/"$//' \
@@ -33,12 +44,3 @@ aws logs get-log-events --log-group-name /aws/lambda/$1 --log-stream-name $LOG_S
     | sed G \
     | sed 's/\\"/"/g'
 
-#aws logs get-log-events --log-group-name /aws/lambda/$1 --log-stream-name $LOG_STREAM --region $REGION \
-#    | grep message \
-#    | sed 's/.*"message": "//' \
-#    | sed 's/"$//' \
-#    | sed 's/\\t/ /g' \
-#    | sed 's/\\n//g' \
-#    | sed G \
-#    | sed 's/\\"/"/g'
-#
