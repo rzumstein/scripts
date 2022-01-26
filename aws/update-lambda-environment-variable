@@ -31,7 +31,7 @@ NEW_ENVIRONMENT_VARIABLES=$(
     | sed "s/'/\"/g"
 )
 
-echo -e "Updating $LAMBDA_FUNCTION with the following environment varaibles:"
+echo -e "Updating $LAMBDA_FUNCTION with the following environment variables:"
 echo "$NEW_ENVIRONMENT_VARIABLES" | python3 -m json.tool
 
 aws lambda update-function-configuration \
