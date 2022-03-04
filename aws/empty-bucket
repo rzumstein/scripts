@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# Removes all objects from an S3 bucket
+
+# Usage: empty-bucket <bucket name>
+# Example: empty-bucket my-bucket
+
+BUCKET=$1
+
+aws s3 rm s3://$1 --recursive
+
