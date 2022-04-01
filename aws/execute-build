@@ -5,6 +5,27 @@
 # Usage: execute-build <build name> <source version> <aws region>
 # Example: execute-build MyBuild MyBranch us-east-1
 
+# Optionally, any environment variables can be overridden as well
+# by providing them as a comma-separated list after the region
+# Example: execute-build MyBuild MyBranch us-east-1 var1=val1,var2=val2
+
+BUILD_NAME=$1
+SOURCE_VERSION=$2
+REGION=$3
+ENV_OVERRIDES=''
+
+if [[ $REGION = '' ]]; then
+  REGION='us-east-1'
+fi
+
+IFS=',' read -ra ENV_VARS <<< "$4"
+for i in "${ENV_VARS[@]}"; do
+  ENV_NAME=$(echo $i | cut -d "=" -f 1)
+  ENV_VAL=$(echo $i | cut -d "=" -f 2)
+  ENV_OVERRIDES="${ENV_OVERRIDES} name=${ENV_NAME},value=${ENV_VAL},type=PLAINTEXT"
+done
+ENV_OVERRIDES="${ENV_OVERRIDES:1}"
+
 function mac_or_linux {
     if [ "$(uname)" = "Darwin" ]; then
         echo "mac"
@@ -54,11 +75,17 @@ function get_build_time {
     echo "${MINUTES}m ${SECONDS}s"
 }
 
-
-BUILD_ID=$(aws codebuild start-build --project-name $1 --source-version $2 --region $3 \
-    | grep id \
-    | sed 's/".*id": "//' \
-    | sed 's/",.*$//')
+if [[ $ENV_OVERRIDES = '' ]]; then
+  BUILD_ID=$(aws codebuild start-build --project-name $BUILD_NAME --source-version $SOURCE_VERSION --region $REGION \
+      | grep id \
+      | sed 's/".*id": "//' \
+      | sed 's/",.*$//')
+else
+  BUILD_ID=$(aws codebuild start-build --project-name $BUILD_NAME --source-version $SOURCE_VERSION --region $REGION --environment-variables-override $ENV_OVERRIDES \
+      | grep id \
+      | sed 's/".*id": "//' \
+      | sed 's/",.*$//')
+fi
 
 echo -e "Build Started: ${BUILD_ID}\n"
 
