@@ -14,5 +14,5 @@ fi
 
 aws lambda list-functions --query 'Functions[*].FunctionName' --output yaml-stream \
   | grep -i --line-buffered "$SEARCH_STRING" \
-  | sed "s/  - \(.*\)/  - \1\n  - https:\/\/us-east-1.console.aws.amazon.com\/lambda\/home?region=$REGION#\/functions\/\1\n\n/"
+  | sed "s/  - \(.*\)/  - \1\n  - https:\/\/$REGION.console.aws.amazon.com\/lambda\/home?region=$REGION#\/functions\/\1\n\n/"
 
