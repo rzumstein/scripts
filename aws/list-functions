@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+# Lists all lambda functions, optionally filtering based on provided text
+
+# Usage: list-functions <aws region> <search-string> 
+# Example: list-functions us-east-1 my-function
+
+REGION=$1
+SEARCH_STRING=$2
+
+if [[ $REGION = '' ]]; then
+  REGION='us-east-1'
+fi
+
+aws lambda list-functions --query 'Functions[*].FunctionName' --output yaml-stream \
+  | grep -i --line-buffered "$SEARCH_STRING" \
+  | sed "s/  - \(.*\)/  - \1\n  - https:\/\/us-east-1.console.aws.amazon.com\/lambda\/home?region=$REGION#\/functions\/\1\n\n/"
+
