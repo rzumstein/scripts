@@ -34,6 +34,16 @@ function mac_or_linux {
     fi
 }
 
+function is_batch_build {
+    if [ "$(aws codebuild batch-get-projects --names $1 --query projects[0].buildBatchConfig)" = "null" ]; then
+        false
+        return
+    else
+        true
+        return
+    fi
+}
+
 function get_build {
     echo "$(aws codebuild batch-get-builds --ids $1)"
 }
@@ -62,7 +72,7 @@ function get_build_phase {
 
 function get_build_time {
     OS=$(mac_or_linux)
-    START_TIME=$(echo $1 | grep startTime | sed 's/.*"startTime": //' | sed 's/\..*$//' | tr -d '"')
+    START_TIME=$(echo $1 | grep startTime | sed 's/.*"startTime": //' | sed 's/\..*$//' | tr -d '"' | head -n 1)
     CUR_TIME=$(date +%s)
     if [[ "$OS" == "mac" ]]; then
         START_TIME=$(date -j -f "%Y-%m-%dT%H:%M:%S" $START_TIME +%s)
@@ -75,22 +85,42 @@ function get_build_time {
     echo "${MINUTES}m ${SECONDS}s"
 }
 
-if [[ $ENV_OVERRIDES = '' ]]; then
-  BUILD_ID=$(aws codebuild start-build \
-    --project-name $BUILD_NAME \
-    --source-version $SOURCE_VERSION \
-    --region $REGION \
-    --output text \
-    --query build.id)
+if is_batch_build "${BUILD_NAME}"; then
+    if [[ $ENV_OVERRIDES = '' ]]; then
+        BUILD_ID=$(aws codebuild start-build-batch \
+          --project-name $BUILD_NAME \
+          --source-version $SOURCE_VERSION \
+          --region $REGION \
+          --output text \
+          --query buildBatch.id)
+    else
+        BUILD_ID=$(aws codebuild start-build-batch \
+          --project-name $BUILD_NAME \
+          --source-version $SOURCE_VERSION \
+          --region $REGION \
+          --environment-variables-override $ENV_OVERRIDES \
+          --output text \
+          --query buildBatch.id)
+    fi
 else
-  BUILD_ID=$(aws codebuild start-build \
-    --project-name $BUILD_NAME \
-    --source-version $SOURCE_VERSION \
-    --region $REGION \
-    --environment-variables-override $ENV_OVERRIDES \
-    --output text \
-    --query build.id)
+    if [[ $ENV_OVERRIDES = '' ]]; then
+        BUILD_ID=$(aws codebuild start-build \
+          --project-name $BUILD_NAME \
+          --source-version $SOURCE_VERSION \
+          --region $REGION \
+          --output text \
+          --query build.id)
+    else
+        BUILD_ID=$(aws codebuild start-build \
+          --project-name $BUILD_NAME \
+          --source-version $SOURCE_VERSION \
+          --region $REGION \
+          --environment-variables-override $ENV_OVERRIDES \
+          --output text \
+          --query build.id)
+    fi
 fi
+
 
 echo -e "Build Started: ${BUILD_ID}\n"
 
