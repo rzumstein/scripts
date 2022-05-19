@@ -76,15 +76,20 @@ function get_build_time {
 }
 
 if [[ $ENV_OVERRIDES = '' ]]; then
-  BUILD_ID=$(aws codebuild start-build --project-name $BUILD_NAME --source-version $SOURCE_VERSION --region $REGION \
-      | grep id \
-      | sed 's/".*id": "//' \
-      | sed 's/",.*$//')
+  BUILD_ID=$(aws codebuild start-build \
+    --project-name $BUILD_NAME \
+    --source-version $SOURCE_VERSION \
+    --region $REGION \
+    --output text \
+    --query build.id)
 else
-  BUILD_ID=$(aws codebuild start-build --project-name $BUILD_NAME --source-version $SOURCE_VERSION --region $REGION --environment-variables-override $ENV_OVERRIDES \
-      | grep id \
-      | sed 's/".*id": "//' \
-      | sed 's/",.*$//')
+  BUILD_ID=$(aws codebuild start-build \
+    --project-name $BUILD_NAME \
+    --source-version $SOURCE_VERSION \
+    --region $REGION \
+    --environment-variables-override $ENV_OVERRIDES \
+    --output text \
+    --query build.id)
 fi
 
 echo -e "Build Started: ${BUILD_ID}\n"
