@@ -19,6 +19,7 @@ AWS_RESULT=$(
   aws lambda get-function-configuration \
     --function-name $LAMBDA_FUNCTION \
     --region $REGION \
+    --output json \
     --query '[RevisionId','Environment.Variables]'
 )
 

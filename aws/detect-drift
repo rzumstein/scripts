@@ -19,6 +19,7 @@ function get_drift_detection_status {
     echo "$(aws cloudformation describe-stack-drift-detection-status \
         --stack-drift-detection-id $1 \
         --region $REGION \
+        --output json \
             | grep DetectionStatus \
             | sed 's/.*"DetectionStatus": "//' \
             | sed 's/",.*//')"
@@ -28,13 +29,14 @@ function get_drift_status {
     echo "$(aws cloudformation describe-stack-drift-detection-status \
         --stack-drift-detection-id $1 \
         --region $REGION \
+        --output json \
             | grep StackDriftStatus \
             | sed 's/.*"StackDriftStatus": "//' \
             | sed 's/",.*//')"
 }
 
 function execute_drift_check {
-    DRIFT_ID=$(aws cloudformation detect-stack-drift --stack-name $1 --region $REGION \
+    DRIFT_ID=$(aws cloudformation detect-stack-drift --stack-name $1 --region $REGION --output json \
         | grep StackDriftDetectionId \
         | sed 's/.*"StackDriftDetectionId": "//' \
         | sed 's/"//g')

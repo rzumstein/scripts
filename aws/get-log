@@ -20,6 +20,7 @@ LOG_STREAM=$(
     --descending \
     --max-items 1 \
     --region $REGION \
+    --output json \
     --query 'logStreams[0].logStreamName' \
       | tr -d '"'
 )
@@ -36,6 +37,7 @@ aws logs get-log-events \
   --log-group-name /aws/lambda/$1 \
   --log-stream-name $LOG_STREAM \
   --region $REGION \
+  --output json \
     | grep message \
     | sed 's/.*"message": "//' \
     | sed 's/"$//' \

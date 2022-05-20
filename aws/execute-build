@@ -35,7 +35,7 @@ function mac_or_linux {
 }
 
 function is_batch_build {
-    if [ "$(aws codebuild batch-get-projects --names $1 --query projects[0].buildBatchConfig)" = "null" ]; then
+    if [ "$(aws codebuild batch-get-projects --names $1 --output json --query projects[0].buildBatchConfig)" = "null" ]; then
         false
         return
     else
@@ -45,7 +45,7 @@ function is_batch_build {
 }
 
 function get_build {
-    echo "$(aws codebuild batch-get-builds --ids $1)"
+    echo "$(aws codebuild batch-get-builds --ids $1 --output json)"
 }
 
 function get_build_status {
