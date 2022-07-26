@@ -12,7 +12,7 @@ if [[ $REGION = '' ]]; then
   REGION='us-east-1'
 fi
 
-aws lambda list-functions --query 'Functions[*].FunctionName' --output yaml-stream \
+aws lambda list-functions --query 'Functions[*].FunctionName' --region $REGION --output yaml-stream \
   | grep -i --line-buffered "$SEARCH_STRING" \
   | sed "s/  - \(.*\)/  - \1\n  - https:\/\/$REGION.console.aws.amazon.com\/lambda\/home?region=$REGION#\/functions\/\1\n\n/"
 

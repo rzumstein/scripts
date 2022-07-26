@@ -12,7 +12,7 @@ if [[ $REGION = '' ]]; then
   REGION='us-east-1'
 fi
 
-aws codebuild list-projects --output yaml-stream \
+aws codebuild list-projects --region $REGION --output yaml-stream \
   | grep -i --line-buffered "$SEARCH_STRING" \
   | sed "s/  - \(.*\)/  - \1\n  - https:\/\/$REGION.console.aws.amazon.com\/codesuite\/codebuild\/projects\/\1\n/"
 
