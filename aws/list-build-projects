@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+# Lists builds in CodeBuild, optionally filtering based on provided search string
+
+# Usage: list-build-projects <aws region> <search-string>
+# Example: list-build-projects us-east-1 my-build
+
+REGION=$1
+SEARCH_STRING=$2
+
+if [[ $REGION = '' ]]; then
+  REGION='us-east-1'
+fi
+
+aws codebuild list-projects --output yaml-stream \
+  | grep -i --line-buffered "$SEARCH_STRING" \
+  | sed "s/  - \(.*\)/  - \1\n  - https:\/\/$REGION.console.aws.amazon.com\/codesuite\/codebuild\/projects\/\1\n/"
+
